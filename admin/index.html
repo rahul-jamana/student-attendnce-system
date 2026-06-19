@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Smart QR Attendance</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header class="header">
+        <div class="container header-content">
+            <h1>🎓 Smart QR Attendance</h1>
+            <div class="admin-badge">Admin Dashboard</div>
+        </div>
+    </header>
+
+    <main class="container main-content">
+        <section class="panel qr-panel">
+            <h2>Generate Attendance QR</h2>
+            <p class="description">Capture your location and generate a session-specific QR code for students to scan.</p>
+            
+            <div class="location-status" id="locationStatus">
+                <span class="icon">📍</span> <span id="locationText">Fetching location...</span>
+            </div>
+
+            <div class="action-buttons">
+                <button class="btn btn-primary" id="btnMorning" disabled>
+                    🌅 Generate Morning QR
+                </button>
+                <button class="btn btn-secondary" id="btnAfternoon" disabled>
+                    🌇 Generate Afternoon QR
+                </button>
+            </div>
+
+            <div class="qr-container hidden" id="qrContainer">
+                <h3 id="qrSessionTitle">Morning Session</h3>
+                <div id="qrcode" class="qrcode"></div>
+                <div class="timer" id="timer">Expires in: <span id="countdown">10:00</span></div>
+                <button class="btn btn-outline" id="btnStopSession">Stop Session</button>
+            </div>
+            
+            <div id="errorBox" class="alert alert-error hidden"></div>
+        </section>
+
+        <section class="panel data-panel">
+            <div class="data-header">
+                <h2>Attendance Records</h2>
+                <div class="data-actions">
+                    <button class="btn btn-icon" id="btnRefresh" title="Refresh Data">🔄</button>
+                    <button class="btn btn-success" id="btnExport">⬇️ Export Excel</button>
+                </div>
+            </div>
+            
+            <div class="table-container">
+                <table id="attendanceTable">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Roll Number</th>
+                            <th>Name</th>
+                            <th>Branch</th>
+                            <th>Sem</th>
+                            <th>Morning</th>
+                            <th>Afternoon</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <tr>
+                            <td colspan="7" class="text-center loading-text">Loading data...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="stats-container">
+                <div class="stat-card">
+                    <div class="stat-value" id="statMorning">0</div>
+                    <div class="stat-label">Morning Present</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="statAfternoon">0</div>
+                    <div class="stat-label">Afternoon Present</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="statTotal">0</div>
+                    <div class="stat-label">Total Students</div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Include qrcode.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

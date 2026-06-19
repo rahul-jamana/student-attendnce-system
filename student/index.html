@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Attendance Scanner</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header class="header">
+        <div class="container header-content">
+            <h1>🎓 Student Portal</h1>
+        </div>
+    </header>
+
+    <main class="container main-content">
+        <div id="statusBox" class="alert hidden"></div>
+
+        <section id="scannerSection" class="panel">
+            <h2>Scan Attendance QR</h2>
+            <p class="description">Please allow camera and location access to mark your attendance.</p>
+            
+            <div class="location-status" id="locationStatus">
+                <span class="icon">📍</span> <span id="locationText">Location access is required.</span>
+                <button id="btnRequestLocation" class="btn btn-primary btn-block mt-2" style="padding: 0.5rem; font-size: 0.9rem;">Allow Location</button>
+            </div>
+
+            <div id="reader" width="600px"></div>
+        </section>
+
+        <section id="formSection" class="panel hidden">
+            <h2 id="formTitle">Mark Attendance</h2>
+            <div class="session-badge" id="sessionBadge">Morning Session</div>
+            
+            <form id="attendanceForm">
+                <div class="form-group">
+                    <label for="rollNumber">Roll Number *</label>
+                    <input type="text" id="rollNumber" required placeholder="e.g., 101" autocomplete="off">
+                </div>
+                
+                <div class="form-group">
+                    <label for="studentName">Student Name *</label>
+                    <input type="text" id="studentName" required placeholder="John Doe" autocomplete="off">
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="branch">Branch *</label>
+                        <select id="branch" required>
+                            <option value="" disabled selected>Select Branch</option>
+                            <option value="CSE">CSE</option>
+                            <option value="IT">IT</option>
+                            <option value="ECE">ECE</option>
+                            <option value="MECH">MECH</option>
+                            <option value="CIVIL">CIVIL</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="semester">Semester *</label>
+                        <select id="semester" required>
+                            <option value="" disabled selected>Select Sem</option>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                            <option value="6">6</option>
+                            <option value="7">7</option>
+                            <option value="8">8</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block" id="btnSubmit">
+                    Submit Attendance
+                </button>
+                <button type="button" class="btn btn-outline btn-block mt-2" id="btnCancel">
+                    Cancel
+                </button>
+            </form>
+        </section>
+        
+        <section id="successSection" class="panel hidden text-center">
+            <div class="success-icon">✅</div>
+            <h2>Attendance Marked Successfully</h2>
+            <p>You have successfully marked your attendance for this session.</p>
+            <button class="btn btn-primary mt-4" onclick="location.reload()">Done</button>
+        </section>
+
+    </main>
+
+    <!-- Include html5-qrcode -->
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <script src="script.js"></script>
+</body>
+</html>
