@@ -1,19 +1,19 @@
 // ==========================================
 // CONFIGURATION
 // Paste your Google Apps Script Web App URL here
-const APPS_SCRIPT_URL = "YOUR_GOOGLE_APPS_SCRIPT_URL_HERE";
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxWoj00cxKwK-rZt5ZaKdm6iERbFXwP2c3XSzVayz-lk4dF-6WqWPOAssZeqPoBcNIEUQ/exec";
 // ==========================================
 
 // State
 let studentLat = null;
 let studentLng = null;
 let currentQRData = null;
-let html5QrcodeScanner = null;
 
 // DOM Elements
 const locationStatus = document.getElementById('locationStatus');
 const locationText = document.getElementById('locationText');
 const statusBox = document.getElementById('statusBox');
+const instructionText = document.getElementById('instructionText');
 
 const scannerSection = document.getElementById('scannerSection');
 const formSection = document.getElementById('formSection');
@@ -27,12 +27,38 @@ const btnRequestLocation = document.getElementById('btnRequestLocation');
 
 // Init
 function init() {
-    // Request location first
-    getStudentLocation();
-
     btnRequestLocation.addEventListener('click', getStudentLocation);
-    btnCancel.addEventListener('click', resetScanner);
+    btnCancel.addEventListener('click', () => location.reload());
     attendanceForm.addEventListener('submit', submitAttendance);
+
+    // Read URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const dataParam = urlParams.get('data');
+
+    if (dataParam) {
+        try {
+            // Decode the base64 encoded JSON string
+            currentQRData = JSON.parse(atob(dataParam));
+            
+            // Validate basic structure
+            if (!currentQRData.session || !currentQRData.lat || !currentQRData.lng || !currentQRData.exp || !currentQRData.token) {
+                throw new Error("Invalid format.");
+            }
+
+            // Immediately ask for location
+            getStudentLocation();
+
+        } catch (e) {
+            showError("Invalid or corrupted Attendance Link.");
+            if(instructionText) instructionText.innerText = "Please scan a valid QR code provided by your teacher.";
+            btnRequestLocation.classList.add('hidden');
+        }
+    } else {
+        // No data param, means they just went to /student/ manually
+        showError("Missing Attendance Data.");
+        if(instructionText) instructionText.innerText = "Please use Google Lens or your phone camera to scan the QR code displayed by your teacher. Do not open this page manually.";
+        btnRequestLocation.classList.add('hidden');
+    }
 }
 
 function getStudentLocation() {
@@ -47,11 +73,11 @@ function getStudentLocation() {
             studentLng = position.coords.longitude;
             
             locationStatus.className = 'location-status success';
-            locationText.innerText = `Location Acquired. Ready to scan.`;
+            locationText.innerText = `Location Acquired. Verifying...`;
             btnRequestLocation.classList.add('hidden');
             
-            // Start scanner
-            startScanner();
+            // Proceed to validation
+            validateAndShowForm();
         },
         (error) => {
             let msg = "Location access is required for attendance.";
@@ -68,69 +94,30 @@ function showLocationError(msg) {
     showError(msg);
 }
 
-function startScanner() {
-    if (html5QrcodeScanner) return; // already started
+function validateAndShowForm() {
+    if (!currentQRData) return;
 
-    html5QrcodeScanner = new Html5QrcodeScanner(
-        "reader",
-        { fps: 10, qrbox: {width: 250, height: 250} },
-        /* verbose= */ false
-    );
-    html5QrcodeScanner.render(onScanSuccess, onScanFailure);
-}
-
-function stopScanner() {
-    if (html5QrcodeScanner) {
-        html5QrcodeScanner.clear().catch(error => {
-            console.error("Failed to clear html5QrcodeScanner. ", error);
-        });
-        html5QrcodeScanner = null;
+    // Validate Expiry
+    if (Date.now() > currentQRData.exp) {
+        showError("This Attendance Link has expired. Please ask the teacher for a new one.");
+        return;
     }
-}
 
-function onScanSuccess(decodedText, decodedResult) {
-    try {
-        const data = JSON.parse(decodedText);
-        
-        // Validate QR Data structure
-        if (!data.session || !data.lat || !data.lng || !data.exp || !data.token) {
-            throw new Error("Invalid QR code format.");
-        }
-
-        // Validate Expiry
-        if (Date.now() > data.exp) {
-            showError("QR Code expired. Contact Faculty.");
-            stopScanner();
-            return;
-        }
-
-        // Validate Location (Distance)
-        const distance = calculateDistance(studentLat, studentLng, data.lat, data.lng);
-        if (distance > 50) {
-            showError(`Invalid Attendance: You are outside the classroom attendance zone. (${Math.round(distance)}m away)`);
-            stopScanner();
-            return;
-        }
-
-        // Validate Duplicate natively (localStorage)
-        if (localStorage.getItem('attendance_' + data.token)) {
-            showError("Attendance already marked for this session on this device.");
-            stopScanner();
-            return;
-        }
-
-        // All Validations passed
-        currentQRData = data;
-        showForm();
-
-    } catch (e) {
-        showError("Invalid QR code.");
-        stopScanner();
+    // Validate Location (Distance)
+    const distance = calculateDistance(studentLat, studentLng, currentQRData.lat, currentQRData.lng);
+    if (distance > 50) {
+        showError(`Invalid Attendance: You are outside the classroom attendance zone. (${Math.round(distance)}m away)`);
+        return;
     }
-}
 
-function onScanFailure(error) {
-    // handle scan failure, usually better to ignore and keep scanning
+    // Validate Duplicate natively (localStorage)
+    if (localStorage.getItem('attendance_' + currentQRData.token)) {
+        showError("Attendance already marked for this session on this device.");
+        return;
+    }
+
+    // All Validations passed
+    showForm();
 }
 
 // Haversine Formula
@@ -151,7 +138,6 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
 }
 
 function showForm() {
-    stopScanner();
     hideError();
     scannerSection.classList.add('hidden');
     formSection.classList.remove('hidden');
@@ -169,14 +155,6 @@ function showForm() {
     if(savedName) document.getElementById('studentName').value = savedName;
     if(savedBranch) document.getElementById('branch').value = savedBranch;
     if(savedSem) document.getElementById('semester').value = savedSem;
-}
-
-function resetScanner() {
-    formSection.classList.add('hidden');
-    scannerSection.classList.remove('hidden');
-    hideError();
-    currentQRData = null;
-    startScanner();
 }
 
 async function submitAttendance(e) {

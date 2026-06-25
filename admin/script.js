@@ -1,7 +1,7 @@
 // ==========================================
 // CONFIGURATION
 // Paste your Google Apps Script Web App URL here
-const APPS_SCRIPT_URL = "YOUR_GOOGLE_APPS_SCRIPT_URL_HERE";
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxWoj00cxKwK-rZt5ZaKdm6iERbFXwP2c3XSzVayz-lk4dF-6WqWPOAssZeqPoBcNIEUQ/exec";
 // ==========================================
 
 // State
@@ -9,6 +9,7 @@ let adminLat = null;
 let adminLng = null;
 let qrCode = null;
 let countdownInterval = null;
+const ADMIN_PASSWORD = "Ayush#@26"; // Change this if needed
 
 // DOM Elements
 const locationStatus = document.getElementById('locationStatus');
@@ -24,6 +25,14 @@ const errorBox = document.getElementById('errorBox');
 const tableBody = document.getElementById('tableBody');
 const btnRefresh = document.getElementById('btnRefresh');
 const btnExport = document.getElementById('btnExport');
+const qrExpiryTimeInput = document.getElementById('qrExpiryTime');
+
+// Login Elements
+const loginOverlay = document.getElementById('loginOverlay');
+const appContent = document.getElementById('appContent');
+const adminPassword = document.getElementById('adminPassword');
+const btnLogin = document.getElementById('btnLogin');
+const loginError = document.getElementById('loginError');
 
 const statMorning = document.getElementById('statMorning');
 const statAfternoon = document.getElementById('statAfternoon');
@@ -31,14 +40,27 @@ const statTotal = document.getElementById('statTotal');
 
 // Initialize
 function init() {
-    getAdminLocation();
-    fetchData();
+    btnLogin.addEventListener('click', checkLogin);
+    adminPassword.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') checkLogin();
+    });
 
     btnMorning.addEventListener('click', () => generateQR('Morning'));
     btnAfternoon.addEventListener('click', () => generateQR('Afternoon'));
     btnStopSession.addEventListener('click', stopSession);
     btnRefresh.addEventListener('click', fetchData);
     btnExport.addEventListener('click', exportToExcel);
+}
+
+function checkLogin() {
+    if (adminPassword.value === ADMIN_PASSWORD) {
+        loginOverlay.classList.add('hidden');
+        appContent.classList.remove('hidden');
+        getAdminLocation();
+        fetchData();
+    } else {
+        loginError.classList.remove('hidden');
+    }
 }
 
 function getAdminLocation() {
@@ -86,8 +108,11 @@ function generateQR(session) {
     // Clear previous
     stopSession();
 
-    // 10 minutes expiry
-    const expiryTime = Date.now() + 10 * 60 * 1000;
+    // Get minutes from input, default to 25
+    let minutes = parseInt(qrExpiryTimeInput.value);
+    if (isNaN(minutes) || minutes < 1) minutes = 25;
+
+    const expiryTime = Date.now() + minutes * 60 * 1000;
     const token = Math.random().toString(36).substring(2, 15);
 
     const qrData = {
@@ -99,11 +124,17 @@ function generateQR(session) {
         date: new Date().toLocaleDateString('en-IN')
     };
 
+    // Encode data and construct URL
+    // Hardcode the Firebase URL so it works even if admin page is opened locally
+    const FIREBASE_URL = "https://smart-qr-attendance-4.web.app";
+    const encodedData = btoa(JSON.stringify(qrData));
+    const qrUrl = FIREBASE_URL + "/student/?data=" + encodedData;
+
     qrSessionTitle.innerText = `${session} Session Active`;
     qrSessionTitle.style.color = session === 'Morning' ? 'var(--secondary)' : 'var(--primary)';
     
     qrCode = new QRCode(qrcodeElement, {
-        text: JSON.stringify(qrData),
+        text: qrUrl,
         width: 300,
         height: 300,
         colorDark : "#000000",

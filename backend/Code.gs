@@ -23,7 +23,20 @@ function setupSheet() {
 
 function doGet(e) {
   // Handle preflight CORS request or simple GET request for reading data
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  if (!e || !e.parameter) {
+    e = { parameter: {} }; // fallback for testing
+  }
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  // Get date from query param, or default to today
+  let queryDate = e.parameter.date || new Date().toLocaleDateString('en-IN');
+  let sheetName = queryDate.replace(/\//g, "-");
+  let sheet = ss.getSheetByName(sheetName);
+  
+  if (!sheet) {
+    return ContentService.createTextOutput(JSON.stringify({ success: true, data: [] }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
   const data = sheet.getDataRange().getValues();
   
   if (data.length <= 1) {
@@ -49,7 +62,7 @@ function doGet(e) {
 
 function doPost(e) {
   try {
-    const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
     // Parse the incoming JSON data
     let requestData;
     if (e.postData && e.postData.contents) {
@@ -72,6 +85,20 @@ function doPost(e) {
     if (!date || !rollNumber || !session) {
       return ContentService.createTextOutput(JSON.stringify({ success: false, message: "Missing required fields." }))
         .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    let sheetName = String(date).replace(/\//g, "-");
+    let sheet = ss.getSheetByName(sheetName);
+    
+    // Create new sheet if it doesn't exist for this day
+    if (!sheet) {
+      sheet = ss.insertSheet(sheetName);
+      const headers = [
+        "Date", "Roll Number", "Student Name", "Branch", "Semester", 
+        "Morning Attendance", "Morning Time", "Afternoon Attendance", "Afternoon Time"
+      ];
+      sheet.appendRow(headers);
+      sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold").setBackground("#d9ead3");
     }
 
     const data = sheet.getDataRange().getValues();

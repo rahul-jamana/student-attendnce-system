@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart QR Attendance System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #e0f2fe;
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+        .container {
+            background: white;
+            padding: 3rem;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            max-width: 500px;
+            width: 90%;
+        }
+        h1 {
+            color: #1e293b;
+            margin-bottom: 0.5rem;
+            font-size: 1.8rem;
+        }
+        p {
+            color: #64748b;
+            margin-bottom: 2.5rem;
+            line-height: 1.6;
+        }
+        .btn-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .btn {
+            display: inline-block;
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1.1rem;
+            transition: all 0.2s ease;
+        }
+        .btn-admin {
+            background: #0284c7;
+            color: white;
+            box-shadow: 0 4px 6px rgba(2, 132, 199, 0.2);
+        }
+        .btn-admin:hover {
+            background: #0369a1;
+            transform: translateY(-2px);
+        }
+        .btn-student {
+            background: white;
+            color: #0284c7;
+            border: 2px solid #bae6fd;
+        }
+        .btn-student:hover {
+            border-color: #0284c7;
+            background: #f0f9ff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎓 Smart QR Attendance</h1>
+        <p>Welcome to the Attendance Portal. Please select your role to continue.</p>
+        <div class="btn-container">
+            <a href="/admin/" class="btn btn-admin">Teacher / Admin Login</a>
+            <a href="/student/" class="btn btn-student">Student Portal</a>
+        </div>
+    </div>
+</body>
+</html>

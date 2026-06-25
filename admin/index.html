@@ -8,6 +8,17 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <div id="loginOverlay" class="login-overlay">
+        <div class="login-box">
+            <h2>🔒 Admin Login</h2>
+            <p>Please enter the admin password</p>
+            <input type="password" id="adminPassword" placeholder="Password" style="width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 6px;">
+            <button id="btnLogin" class="btn btn-primary btn-block">Login</button>
+            <div id="loginError" class="alert alert-error hidden" style="margin-top: 10px;">Incorrect Password</div>
+        </div>
+    </div>
+
+    <div id="appContent" class="hidden">
     <header class="header">
         <div class="container header-content">
             <h1>🎓 Smart QR Attendance</h1>
@@ -22,6 +33,11 @@
             
             <div class="location-status" id="locationStatus">
                 <span class="icon">📍</span> <span id="locationText">Fetching location...</span>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 15px; text-align: left;">
+                <label for="qrExpiryTime" style="display: block; margin-bottom: 5px; font-weight: 500;">QR Expiry Time (Minutes):</label>
+                <input type="number" id="qrExpiryTime" value="25" min="1" max="120" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #ccc;">
             </div>
 
             <div class="action-buttons">
@@ -93,5 +109,6 @@
     <!-- Include qrcode.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="script.js"></script>
+    </div>
 </body>
 </html>

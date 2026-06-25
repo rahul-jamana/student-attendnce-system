@@ -18,15 +18,13 @@
         <div id="statusBox" class="alert hidden"></div>
 
         <section id="scannerSection" class="panel">
-            <h2>Scan Attendance QR</h2>
-            <p class="description">Please allow camera and location access to mark your attendance.</p>
+            <h2>Verify Attendance</h2>
+            <p class="description" id="instructionText">Please allow location access to verify you are in the classroom.</p>
             
             <div class="location-status" id="locationStatus">
                 <span class="icon">📍</span> <span id="locationText">Location access is required.</span>
                 <button id="btnRequestLocation" class="btn btn-primary btn-block mt-2" style="padding: 0.5rem; font-size: 0.9rem;">Allow Location</button>
             </div>
-
-            <div id="reader" width="600px"></div>
         </section>
 
         <section id="formSection" class="panel hidden">
@@ -52,8 +50,12 @@
                             <option value="CSE">CSE</option>
                             <option value="IT">IT</option>
                             <option value="ECE">ECE</option>
+                            <option value="EEE">EEE</option>
                             <option value="MECH">MECH</option>
                             <option value="CIVIL">CIVIL</option>
+                            <option value="CSM">CSM</option>
+                            <option value="CSD">CSD</option>
+                            <option value="DIPLOMA">DIPLOMA</option>
                         </select>
                     </div>
                     
@@ -91,8 +93,6 @@
 
     </main>
 
-    <!-- Include html5-qrcode -->
-    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <script src="script.js"></script>
 </body>
 </html>
