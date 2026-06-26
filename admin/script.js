@@ -69,27 +69,64 @@ function getAdminLocation() {
         return;
     }
 
-    navigator.geolocation.getCurrentPosition(
-        (position) => {
-            adminLat = position.coords.latitude;
-            adminLng = position.coords.longitude;
-            
-            locationStatus.className = 'location-status success';
-            locationText.innerText = `Location Acquired: ${adminLat.toFixed(5)}, ${adminLng.toFixed(5)}`;
-            
-            // Enable buttons
-            btnMorning.disabled = false;
-            btnAfternoon.disabled = false;
-        },
-        (error) => {
+    if (locationText) {
+        locationText.innerText = "Acquiring location...";
+    }
+    locationStatus.className = 'location-status';
+
+    const optionsHigh = {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 5000
+    };
+
+    const optionsLow = {
+        enableHighAccuracy: false,
+        timeout: 15000,
+        maximumAge: 10000
+    };
+
+    function success(position) {
+        adminLat = position.coords.latitude;
+        adminLng = position.coords.longitude;
+        
+        locationStatus.className = 'location-status success';
+        locationText.innerText = `Location Acquired: ${adminLat.toFixed(5)}, ${adminLng.toFixed(5)}`;
+        
+        // Enable buttons
+        btnMorning.disabled = false;
+        btnAfternoon.disabled = false;
+    }
+
+    function error(err) {
+        console.warn(`Admin location error (${err.code}): ${err.message}`);
+        
+        if (err.code === 3 || err.code === 2) {
+            // Timeout or position unavailable - retry with low accuracy
+            if (locationText) {
+                locationText.innerText = "GPS signal weak. Retrying with network location...";
+            }
+            navigator.geolocation.getCurrentPosition(
+                success,
+                (err2) => {
+                    let msg = "Could not determine location. Please ensure location/GPS is turned ON and try again.";
+                    if (err2.code === 1) {
+                        msg = "Location access denied. Please enable location permissions.";
+                    }
+                    showLocationError(msg);
+                },
+                optionsLow
+            );
+        } else {
             let msg = "Failed to get location.";
-            if (error.code === 1) msg = "Location access denied. Please allow location access.";
-            else if (error.code === 2) msg = "Position unavailable.";
-            else if (error.code === 3) msg = "Location request timed out.";
+            if (err.code === 1) {
+                msg = "Location access denied. Please allow location access in your browser/device settings.";
+            }
             showLocationError(msg);
-        },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-    );
+        }
+    }
+
+    navigator.geolocation.getCurrentPosition(success, error, optionsHigh);
 }
 
 function showLocationError(msg) {
@@ -139,7 +176,7 @@ function generateQR(session) {
         height: 300,
         colorDark : "#000000",
         colorLight : "#ffffff",
-        correctLevel : QRCode.CorrectLevel.H
+        correctLevel : QRCode.CorrectLevel.M
     });
 
     qrContainer.classList.remove('hidden');

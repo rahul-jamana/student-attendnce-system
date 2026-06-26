@@ -8,6 +8,7 @@ const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxWoj00cxKwK-rZ
 let studentLat = null;
 let studentLng = null;
 let currentQRData = null;
+let html5QrcodeScanner = null;
 
 // DOM Elements
 const locationStatus = document.getElementById('locationStatus');
@@ -28,7 +29,10 @@ const btnRequestLocation = document.getElementById('btnRequestLocation');
 // Init
 function init() {
     btnRequestLocation.addEventListener('click', getStudentLocation);
-    btnCancel.addEventListener('click', () => location.reload());
+    btnCancel.addEventListener('click', () => {
+        stopScanner();
+        location.reload();
+    });
     attendanceForm.addEventListener('submit', submitAttendance);
 
     // Read URL parameters
@@ -55,9 +59,10 @@ function init() {
         }
     } else {
         // No data param, means they just went to /student/ manually
-        showError("Missing Attendance Data.");
-        if(instructionText) instructionText.innerText = "Please use Google Lens or your phone camera to scan the QR code displayed by your teacher. Do not open this page manually.";
-        btnRequestLocation.classList.add('hidden');
+        if (instructionText) {
+            instructionText.innerText = "Please allow location access to start the QR code scanner.";
+        }
+        btnRequestLocation.classList.remove('hidden');
     }
 }
 
@@ -67,24 +72,69 @@ function getStudentLocation() {
         return;
     }
 
-    navigator.geolocation.getCurrentPosition(
-        (position) => {
-            studentLat = position.coords.latitude;
-            studentLng = position.coords.longitude;
-            
-            locationStatus.className = 'location-status success';
+    if (locationText) {
+        locationText.innerText = "Acquiring location...";
+    }
+    locationStatus.className = 'location-status';
+    hideError();
+
+    const optionsHigh = {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 5000
+    };
+
+    const optionsLow = {
+        enableHighAccuracy: false,
+        timeout: 15000,
+        maximumAge: 10000
+    };
+
+    function success(position) {
+        studentLat = position.coords.latitude;
+        studentLng = position.coords.longitude;
+        
+        locationStatus.className = 'location-status success';
+        btnRequestLocation.classList.add('hidden');
+        
+        if (currentQRData) {
             locationText.innerText = `Location Acquired. Verifying...`;
-            btnRequestLocation.classList.add('hidden');
-            
-            // Proceed to validation
             validateAndShowForm();
-        },
-        (error) => {
+        } else {
+            locationText.innerText = `Location Acquired. Ready to scan.`;
+            startScanner();
+        }
+    }
+
+    function error(err) {
+        console.warn(`Location error (${err.code}): ${err.message}`);
+        
+        if (err.code === 3 || err.code === 2) {
+            // Timeout or position unavailable - retry with low accuracy
+            if (locationText) {
+                locationText.innerText = "GPS signal weak. Retrying with network location...";
+            }
+            navigator.geolocation.getCurrentPosition(
+                success,
+                (err2) => {
+                    let msg = "Could not determine location. Please ensure location/GPS is turned ON and try again.";
+                    if (err2.code === 1) {
+                        msg = "Location access denied. Please enable location permissions in your browser/device settings.";
+                    }
+                    showLocationError(msg);
+                },
+                optionsLow
+            );
+        } else {
             let msg = "Location access is required for attendance.";
+            if (err.code === 1) {
+                msg = "Location access denied. Please enable location permissions in your browser/device settings.";
+            }
             showLocationError(msg);
-        },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-    );
+        }
+    }
+
+    navigator.geolocation.getCurrentPosition(success, error, optionsHigh);
 }
 
 function showLocationError(msg) {
@@ -120,6 +170,101 @@ function validateAndShowForm() {
     showForm();
 }
 
+function startScanner() {
+    if (html5QrcodeScanner) return; // already started
+
+    const readerElement = document.getElementById('reader');
+    if (readerElement) {
+        readerElement.classList.remove('hidden');
+    }
+    if (instructionText) {
+        instructionText.innerText = "Scan the QR code displayed by your teacher.";
+    }
+
+    html5QrcodeScanner = new Html5QrcodeScanner(
+        "reader",
+        { fps: 10, qrbox: {width: 250, height: 250} },
+        /* verbose= */ false
+    );
+    html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+}
+
+function stopScanner() {
+    if (html5QrcodeScanner) {
+        html5QrcodeScanner.clear().catch(error => {
+            console.error("Failed to clear html5QrcodeScanner. ", error);
+        });
+        html5QrcodeScanner = null;
+    }
+    const readerElement = document.getElementById('reader');
+    if (readerElement) {
+        readerElement.classList.add('hidden');
+    }
+}
+
+function onScanSuccess(decodedText, decodedResult) {
+    try {
+        let dataParam = null;
+        if (decodedText.startsWith("http")) {
+            try {
+                const url = new URL(decodedText);
+                dataParam = url.searchParams.get("data");
+            } catch(e) {}
+        }
+        if (!dataParam) {
+            dataParam = decodedText;
+        }
+
+        let parsedData = null;
+        try {
+            parsedData = JSON.parse(atob(dataParam));
+        } catch(e) {
+            // Fallback: try parsing as raw JSON
+            parsedData = JSON.parse(decodedText);
+        }
+
+        // Validate basic structure
+        if (!parsedData.session || !parsedData.lat || !parsedData.lng || !parsedData.exp || !parsedData.token) {
+            throw new Error("Invalid QR code format.");
+        }
+
+        // Validate Expiry
+        if (Date.now() > parsedData.exp) {
+            showError("This QR Code has expired. Please ask the teacher for a new one.");
+            stopScanner();
+            return;
+        }
+
+        // Validate Location (Distance)
+        const distance = calculateDistance(studentLat, studentLng, parsedData.lat, parsedData.lng);
+        if (distance > 50) {
+            showError(`Invalid Attendance: You are outside the classroom attendance zone. (${Math.round(distance)}m away)`);
+            stopScanner();
+            return;
+        }
+
+        // Validate Duplicate natively (localStorage)
+        if (localStorage.getItem('attendance_' + parsedData.token)) {
+            showError("Attendance already marked for this session on this device.");
+            stopScanner();
+            return;
+        }
+
+        // All Validations passed
+        currentQRData = parsedData;
+        stopScanner();
+        showForm();
+
+    } catch (e) {
+        showError("Invalid QR code scanned. Make sure you are scanning the attendance QR code.");
+        stopScanner();
+    }
+}
+
+function onScanFailure(error) {
+    // Ignore scan failures to allow continuous scanner flow
+}
+
 // Haversine Formula
 function calculateDistance(lat1, lon1, lat2, lon2) {
     const R = 6371e3; // metres
@@ -138,6 +283,7 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
 }
 
 function showForm() {
+    stopScanner();
     hideError();
     scannerSection.classList.add('hidden');
     formSection.classList.remove('hidden');

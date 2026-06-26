@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Student Attendance Scanner</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=1.0.3">
 </head>
 <body>
     <header class="header">
@@ -25,6 +25,7 @@
                 <span class="icon">📍</span> <span id="locationText">Location access is required.</span>
                 <button id="btnRequestLocation" class="btn btn-primary btn-block mt-2" style="padding: 0.5rem; font-size: 0.9rem;">Allow Location</button>
             </div>
+            <div id="reader" class="hidden" style="width: 100%; margin-top: 1rem; border-radius: var(--radius); overflow: hidden;"></div>
         </section>
 
         <section id="formSection" class="panel hidden">
@@ -54,7 +55,8 @@
                             <option value="MECH">MECH</option>
                             <option value="CIVIL">CIVIL</option>
                             <option value="CSM">CSM</option>
-                            <option value="CSD">CSD</option>
+                            <option value="CSE(DS)">CSE(DS)</option>
+                            <option value="AERONAUTICAL">AERONAUTICAL</option>
                             <option value="DIPLOMA">DIPLOMA</option>
                         </select>
                     </div>
@@ -93,6 +95,8 @@
 
     </main>
 
-    <script src="script.js"></script>
+    <!-- Include html5-qrcode -->
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <script src="script.js?v=1.0.3"></script>
 </body>
 </html>
